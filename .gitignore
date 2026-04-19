@@ -1,0 +1,5 @@
+.DS_Store
+_test_output/
+_zip_probe/
+*.zip
+*.mp4

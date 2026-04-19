@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault Architect Offline</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09111b;
+      --bg-elevated: #101a27;
+      --bg-panel: rgba(16, 26, 39, 0.92);
+      --bg-card: #142233;
+      --line: #24374f;
+      --line-strong: #385272;
+      --text: #dde7f5;
+      --muted: #9eb2c9;
+      --soft: #6f88a4;
+      --accent: #7fd1b9;
+      --accent-strong: #52b89c;
+      --danger: #ff8e7a;
+      --shadow: 0 22px 48px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+      --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+      --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+      --sans: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(127, 209, 185, 0.14), transparent 34%),
+        radial-gradient(circle at top right, rgba(87, 136, 198, 0.12), transparent 28%),
+        linear-gradient(180deg, #08111a 0%, #0b1420 100%);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    code, pre {
+      font-family: var(--mono);
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.3rem 1.5rem;
+      border-bottom: 1px solid rgba(127, 209, 185, 0.12);
+      background: rgba(7, 12, 19, 0.82);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .brand {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .brand-mark {
+      width: 2.8rem;
+      height: 2.8rem;
+      border-radius: 0.9rem;
+      background:
+        linear-gradient(145deg, rgba(127, 209, 185, 0.22), rgba(82, 184, 156, 0.06)),
+        #0f1b29;
+      border: 1px solid rgba(127, 209, 185, 0.28);
+      display: grid;
+      place-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    .brand-mark svg {
+      width: 1.45rem;
+      height: 1.45rem;
+      stroke: var(--accent);
+      stroke-width: 1.8;
+      fill: none;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font: 700 1.18rem/1 var(--serif);
+      letter-spacing: 0.02em;
+    }
+
+    .brand p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.83rem;
+      max-width: 48rem;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+
+    .stat-chip {
+      min-width: 7.4rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 1rem;
+      background: linear-gradient(180deg, rgba(20, 34, 51, 0.95), rgba(14, 24, 38, 0.95));
+      border: 1px solid rgba(127, 209, 185, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .stat-chip .label {
+      display: block;
+      color: var(--soft);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.62rem;
+      margin-bottom: 0.28rem;
+    }
+
+    .stat-chip .value {
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(20rem, 29rem) minmax(24rem, 1fr);
+      gap: 1.2rem;
+      padding: 1.2rem;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .panel {
+      min-height: 0;
+      border-radius: var(--radius);
+      background: var(--bg-panel);
+      border: 1px solid rgba(127, 209, 185, 0.12);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1rem 1.1rem 0.9rem;
+      border-bottom: 1px solid rgba(127, 209, 185, 0.12);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
+        rgba(12, 20, 32, 0.92);
+    }
+
+    .eyebrow {
+      margin: 0 0 0.45rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font: 700 1rem/1.15 var(--serif);
+    }
+
+    .panel-header p {
+      margin: 0.45rem 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .panel-body {
+      padding: 1rem 1.1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .textarea-wrap {
+      position: relative;
+      min-height: 13rem;
+      flex: 1;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 13rem;
+      resize: vertical;
+      border-radius: 1rem;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent),
+        rgba(7, 13, 22, 0.9);
+      color: var(--text);
+      padding: 1rem;
+      line-height: 1.5;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    textarea:focus {
+      border-color: var(--accent-strong);
+      box-shadow: 0 0 0 1px rgba(82, 184, 156, 0.25);
+    }
+
+    .subgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 0.85rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .field label,
+    .toggle-row > span {
+      color: var(--soft);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+    }
+
+    select {
+      width: 100%;
+      border-radius: 0.9rem;
+      border: 1px solid var(--line);
+      background: rgba(7, 13, 22, 0.9);
+      color: var(--text);
+      padding: 0.8rem 0.9rem;
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--accent-strong);
+      box-shadow: 0 0 0 1px rgba(82, 184, 156, 0.25);
+    }
+
+    .toggle-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .toggle input {
+      accent-color: var(--accent-strong);
+      inline-size: 1rem;
+      block-size: 1rem;
+    }
+
+    .box {
+      border-radius: 1rem;
+      border: 1px solid var(--line);
+      background: rgba(8, 14, 22, 0.82);
+      padding: 0.9rem;
+    }
+
+    .box h3 {
+      margin: 0 0 0.45rem;
+      font-size: 0.84rem;
+    }
+
+    .box p, .box ul {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .box ul {
+      padding-left: 1.1rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .button {
+      padding: 0.82rem 1rem;
+      border-radius: 0.95rem;
+      background: #1a2b40;
+      color: var(--text);
+      border: 1px solid rgba(127, 209, 185, 0.16);
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-weight: 700;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(127, 209, 185, 0.34);
+      background: #1f334c;
+    }
+
+    .button.primary {
+      background: linear-gradient(180deg, rgba(127, 209, 185, 0.25), rgba(82, 184, 156, 0.16));
+      color: #ecfff8;
+      border-color: rgba(127, 209, 185, 0.28);
+    }
+
+    .button.ghost {
+      background: transparent;
+    }
+
+    .button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      min-height: 1.8rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.33rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(127, 209, 185, 0.08);
+      border: 1px solid rgba(127, 209, 185, 0.18);
+      color: var(--muted);
+      font-size: 0.74rem;
+    }
+
+    .badge.soft {
+      background: rgba(87, 136, 198, 0.08);
+      border-color: rgba(87, 136, 198, 0.18);
+    }
+
+    .status {
+      border-radius: 1rem;
+      border: 1px solid rgba(127, 209, 185, 0.12);
+      background: rgba(10, 18, 28, 0.9);
+      padding: 0.85rem 0.95rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .status strong {
+      color: var(--text);
+    }
+
+    .status.error {
+      border-color: rgba(255, 142, 122, 0.28);
+      color: #ffbeaf;
+    }
+
+    .dropzone {
+      border-radius: 1rem;
+      border: 1px dashed rgba(127, 209, 185, 0.24);
+      background:
+        radial-gradient(circle at top, rgba(127, 209, 185, 0.08), transparent 48%),
+        rgba(9, 15, 24, 0.74);
+      padding: 0.95rem 1rem;
+      color: var(--muted);
+      transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+    }
+
+    .dropzone.active {
+      border-color: rgba(127, 209, 185, 0.52);
+      background:
+        radial-gradient(circle at top, rgba(127, 209, 185, 0.14), transparent 48%),
+        rgba(11, 18, 28, 0.88);
+      transform: translateY(-1px);
+    }
+
+    .dropzone strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+      font-size: 0.86rem;
+    }
+
+    .dropzone p {
+      margin: 0;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .doc-list {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.95rem;
+      padding-right: 0.2rem;
+    }
+
+    .empty {
+      flex: 1;
+      min-height: 16rem;
+      border-radius: 1.1rem;
+      border: 1px dashed rgba(127, 209, 185, 0.18);
+      background:
+        radial-gradient(circle at top, rgba(127, 209, 185, 0.06), transparent 48%),
+        rgba(9, 15, 24, 0.72);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 2rem;
+      color: var(--soft);
+    }
+
+    .doc-card {
+      border-radius: 1.1rem;
+      overflow: hidden;
+      border: 1px solid rgba(127, 209, 185, 0.12);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
+        rgba(12, 20, 31, 0.96);
+    }
+
+    .doc-card summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 0.95rem 1rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.8rem;
+      align-items: center;
+    }
+
+    .doc-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .doc-head {
+      min-width: 0;
+    }
+
+    .doc-title {
+      margin: 0;
+      font: 700 1rem/1.15 var(--serif);
+      word-break: break-word;
+    }
+
+    .doc-meta {
+      margin-top: 0.35rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.42rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      padding: 0.26rem 0.48rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: rgba(127, 209, 185, 0.08);
+      border: 1px solid rgba(127, 209, 185, 0.16);
+    }
+
+    .doc-actions {
+      display: flex;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .mini {
+      padding: 0.56rem 0.72rem;
+      border-radius: 0.8rem;
+      font-size: 0.77rem;
+      font-weight: 700;
+      background: rgba(29, 47, 70, 0.9);
+      border: 1px solid rgba(127, 209, 185, 0.14);
+      color: var(--text);
+    }
+
+    .mini:hover {
+      border-color: rgba(127, 209, 185, 0.32);
+    }
+
+    .doc-body {
+      border-top: 1px solid rgba(127, 209, 185, 0.12);
+      padding: 0 1rem 1rem;
+    }
+
+    .doc-body .grid {
+      display: grid;
+      grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+      gap: 0.9rem;
+      padding-top: 0.95rem;
+    }
+
+    .panel-note {
+      border-radius: 0.95rem;
+      border: 1px solid var(--line);
+      background: rgba(8, 14, 22, 0.82);
+      padding: 0.85rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .panel-note h4 {
+      margin: 0 0 0.4rem;
+      color: var(--text);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    pre.preview {
+      margin: 0;
+      min-height: 14rem;
+      max-height: 26rem;
+      overflow: auto;
+      border-radius: 0.95rem;
+      border: 1px solid var(--line);
+      background: rgba(7, 13, 22, 0.88);
+      padding: 0.95rem;
+      color: #c7d5e8;
+      font-size: 0.77rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .footer-note {
+      color: var(--soft);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .doc-body .grid,
+      .subgrid,
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3l7 4v5c0 5-3.4 8.3-7 9-3.6-.7-7-4-7-9V7l7-4Z"></path>
+            <path d="M8.5 12.2 10.8 14.5 15.8 9.5"></path>
+          </svg>
+        </div>
+        <div>
+          <h1>Vault Architect Offline</h1>
+          <p>Single-file intake and reformatting for Obsidian vault structure and NotebookLM semantic indexing. Open the HTML file directly. No server. No external APIs. No CDN dependency.</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat-chip">
+          <span class="label">Sources Queued</span>
+          <span id="queuedCount" class="value">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="label">Documents Built</span>
+          <span id="docCount" class="value">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="label">Known Entities</span>
+          <span id="entityCount" class="value">0</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-header">
+          <div class="eyebrow">Intake</div>
+          <h2>Batch source staging</h2>
+          <p>Paste raw text, load multiple local files, or both. Use a line containing <code>////</code> to split pasted text into separate source blocks before formatting.</p>
+        </div>
+        <div class="panel-body">
+          <div class="textarea-wrap">
+            <textarea id="sourceInput" placeholder="Example source block
+
+Goblin Chief
+Armor Class: 15
+Hit Points: 27
+Location: Blackstone Keep
+Faction: Red Knives
+The Goblin Chief meets Captain Elira at Moonlit Pass.
+
+////
+
+Moonlit Pass
+A narrow route between Blackstone Keep and Iron Hollow."></textarea>
+          </div>
+
+          <div id="dropZone" class="dropzone" tabindex="0" aria-label="Drop files or text here">
+            <strong>Drop files or raw text here</strong>
+            <p>Supports local files and dragged text. Close enough to Obsidian's drag-and-drop import behavior to be useful, which is more than many tools manage.</p>
+          </div>
+
+          <div class="field-grid">
+            <div class="field">
+              <label for="presetSelect">Corpus preset</label>
+              <select id="presetSelect">
+                <option value="auto">Mixed corpus / auto-detect</option>
+                <option value="bestiary">Bestiary and stat blocks</option>
+                <option value="characters">NPC dossiers</option>
+                <option value="locations">Gazetteer / locations</option>
+                <option value="factions">Factions and organizations</option>
+                <option value="items">Items and treasure</option>
+                <option value="sessions">Session notes and recaps</option>
+              </select>
+            </div>
+            <div class="toggle-row">
+              <span>Output extras</span>
+              <label class="toggle"><input id="atlasToggle" type="checkbox" checked> Generate vault atlas note</label>
+              <label class="toggle"><input id="aliasToggle" type="checkbox" checked> Auto-add acronym aliases</label>
+            </div>
+          </div>
+
+          <div class="subgrid">
+            <div class="box">
+              <h3>What the formatter does</h3>
+              <ul>
+                <li>Extracts title, aliases, tags, metadata, summaries, and stat lines.</li>
+                <li>Builds a corpus registry, then links known entities and likely internal references.</li>
+                <li>Emits stable Markdown sections and YAML frontmatter for Obsidian and NotebookLM.</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h3>What it avoids</h3>
+              <ul>
+                <li>No network calls after load because there are no external dependencies to call.</li>
+                <li>No automatic linking of every capitalized phrase like a caffeinated goblin.</li>
+                <li>No hidden service dependency for ZIP generation.</li>
+              </ul>
+            </div>
+          </div>
+
+          <input id="fileInput" type="file" multiple hidden accept=".txt,.md,.markdown,.json,.html,.htm,.csv,.yaml,.yml">
+
+          <div class="controls">
+            <button id="loadFilesBtn" class="button" type="button">Load files</button>
+            <button id="formatBtn" class="button primary" type="button">Format batch</button>
+            <button id="clearInputBtn" class="button ghost" type="button">Clear staging</button>
+          </div>
+
+          <div>
+            <div class="badge-row" id="fileBadges"></div>
+          </div>
+
+          <div id="statusBox" class="status">
+            <strong>Status:</strong> Waiting for input.
+          </div>
+
+          <div class="footer-note">
+            Output files are previewable in-page, downloadable individually, or exportable as a ZIP bundle containing all generated Markdown plus a manifest. This app is intended to run by opening the HTML file directly.
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div class="toolbar">
+            <div>
+              <div class="eyebrow">Output</div>
+              <h2>Normalized document ledger</h2>
+            </div>
+            <div class="toolbar-actions">
+              <button id="downloadAllBtn" class="button ghost" type="button" disabled>Download individual files</button>
+              <button id="downloadZipBtn" class="button primary" type="button" disabled>Download ZIP bundle</button>
+            </div>
+          </div>
+          <p>Each record includes structured metadata, semantic sections, inferred references, and clean Markdown suitable for direct vault intake.</p>
+        </div>
+        <div class="panel-body">
+          <div id="docList" class="doc-list">
+            <div class="empty" id="emptyState">
+              <div>
+                <strong>No output yet.</strong>
+                <div style="margin-top: 0.55rem;">Queue sources, run the formatter, then inspect or download the generated Markdown files.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const AppState = {
+      queuedSources: [],
+      documents: [],
+      registrySize: 0,
+      lastRunOptions: null
+    };
+
+    const DOM = {
+      sourceInput: document.getElementById('sourceInput'),
+      fileInput: document.getElementById('fileInput'),
+      dropZone: document.getElementById('dropZone'),
+      presetSelect: document.getElementById('presetSelect'),
+      atlasToggle: document.getElementById('atlasToggle'),
+      aliasToggle: document.getElementById('aliasToggle'),
+      loadFilesBtn: document.getElementById('loadFilesBtn'),
+      formatBtn: document.getElementById('formatBtn'),
+      clearInputBtn: document.getElementById('clearInputBtn'),
+      downloadAllBtn: document.getElementById('downloadAllBtn'),
+      downloadZipBtn: document.getElementById('downloadZipBtn'),
+      fileBadges: document.getElementById('fileBadges'),
+      statusBox: document.getElementById('statusBox'),
+      docList: document.getElementById('docList'),
+      emptyState: document.getElementById('emptyState'),
+      queuedCount: document.getElementById('queuedCount'),
+      docCount: document.getElementById('docCount'),
+      entityCount: document.getElementById('entityCount')
+    };
+
+    const METADATA_KEYS = {
+      title: 'documentTitle',
+      name: 'documentTitle',
+      titles: 'aliases',
+      alias: 'aliases',
+      aliases: 'aliases',
+      aka: 'aliases',
+      type: 'type',
+      entity: 'type',
+      role: 'role',
+      tier: 'tier',
+      location: 'location',
+      region: 'location',
+      area: 'location',
+      faction: 'faction',
+      factions: 'faction',
+      affiliation: 'faction',
+      parent: 'parent',
+      'part of': 'parent',
+      campaign: 'campaign',
+      source: 'sourceLabel',
+      status: 'status',
+      category: 'category',
+      subtitle: 'subtitle',
+      session_use: 'sessionUse',
+      location_type: 'locationType',
+      world_layer: 'worldLayer',
+      threat_tier: 'threatTier',
+      dimensional_anchor: 'dimensionalAnchor',
+      stability: 'stability',
+      tags: 'tags'
+    };
+
+    const STATS_LABELS = new Set([
+      'armor class',
+      'hit points',
+      'speed',
+      'challenge',
+      'challenge rating',
+      'cr',
+      'alignment',
+      'size',
+      'type',
+      'languages',
+      'senses',
+      'skills',
+      'saving throws',
+      'damage resistances',
+      'damage immunities',
+      'damage vulnerabilities',
+      'condition immunities',
+      'proficiency bonus',
+      'spellcasting',
+      'casting time',
+      'range',
+      'components',
+      'duration',
+      'level',
+      'school',
+      'rarity',
+      'attunement',
+      'weight',
+      'cost'
+    ]);
+
+    const STOPWORD_LINKS = new Set([
+      'Armor Class',
+      'Hit Points',
+      'Challenge Rating',
+      'Saving Throws',
+      'Damage Resistances',
+      'Damage Immunities',
+      'Condition Immunities',
+      'Proficiency Bonus',
+      'Casting Time',
+      'Transit Route',
+      'Unknown',
+      'Standard',
+      'Ambient',
+      'Tags',
+      'Overview',
+      'Role',
+      'Origin',
+      'Personality',
+      'Relationship',
+      'Relationships',
+      'Presence',
+      'Visual',
+      'Voice',
+      'Target',
+      'Duration',
+      'Speed',
+      'Senses',
+      'Alignment',
+      'Actions',
+      'Bonus Action',
+      'Reaction',
+      'Legendary Actions',
+      'Stat Block',
+      'Structured Facts',
+      'Semantic Index',
+      'Content',
+      'References',
+      'Synopsis'
+    ]);
+
+    const COMMON_CAPITALIZED_WORDS = new Set([
+      'a','after','already','also','an','and','any','at','before','between','but','by','can','cannot','costs','court','does','during',
+      'each','every','fail','first','for','from','have','he','her','here','however','if','instead','into','it','its','must','never',
+      'no','not','nothing','of','on','once','only','or','our','over','same','she','something','speak','speaks','target','tags','that',
+      'the','their','them','then','there','these','they','this','those','to','turn','unexpected','use','used','uses','very','what',
+      'when','where','which','while','who','why','will','with','without','your'
+    ]);
+
+    const GENERIC_SECTION_WORDS = new Set([
+      'overview','origin','role','personality','presence','relationship','relationships','visual','voice','dialogue','history','goals',
+      'philosophy','nature','aliases','titles','factions','combat','combat role','combat doctrine','long-term role','former identity',
+      'former','key quote','view','view of the party','view of other powers','structured','structured facts','semantic index','content',
+      'references','synopsis','actions','bonus action','reaction','legendary actions','traits','withdrawal condition','reformation rule',
+      'non-lethal victory condition','how to run seraphine','stat block','core belief','threat level','alignment','saving throws',
+      'damage resistances','condition immunities','skills','languages','senses','spellcasting','spellcasting ability','campaign use',
+      'relationship map','regional effects','other powers','ideological frame','mechanical interaction','strengths','weaknesses',
+      'escalation timeline','gm tone notes'
+    ]);
+
+    const PROPER_NOUN_PATTERN = /\b([A-Z][a-z]+(?:[\s-][A-Z][a-z]+){0,3})\b/g;
+    const CHARACTER_ROLE_HINTS = /\b(captain|scout|warden|knight|mage|priest|chief|duke|duchess|king|queen|lord|lady|commander|agent|seer|hunter|ranger|merchant|scholar|guard)\b/i;
+    const ACRONYM_STOPWORDS = new Set(['and', 'of', 'the', 'for', 'to', 'in']);
+    const PRESET_CONFIG = {
+      auto: { label: 'Mixed corpus / auto-detect', tags: ['mixed-corpus'], atlasTitle: 'Vault Atlas' },
+      bestiary: { label: 'Bestiary and stat blocks', biasType: 'Creature', tags: ['bestiary', 'combat-reference'], atlasTitle: 'Bestiary Atlas' },
+      characters: { label: 'NPC dossiers', biasType: 'NPC', tags: ['character-dossier'], atlasTitle: 'Character Atlas' },
+      locations: { label: 'Gazetteer / locations', biasType: 'Location', tags: ['gazetteer'], atlasTitle: 'Location Atlas' },
+      factions: { label: 'Factions and organizations', biasType: 'Faction', tags: ['faction-ledger'], atlasTitle: 'Faction Atlas' },
+      items: { label: 'Items and treasure', biasType: 'Item', tags: ['item-compendium'], atlasTitle: 'Item Atlas' },
+      sessions: { label: 'Session notes and recaps', biasType: 'Session Note', tags: ['session-archive'], atlasTitle: 'Session Atlas' }
+    };
+
+    const crcTable = (() => {
+      const table = new Uint32Array(256);
+      for (let n = 0; n < 256; n += 1) {
+        let c = n;
+        for (let k = 0; k < 8; k += 1) {
+          c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        table[n] = c >>> 0;
+      }
+      return table;
+    })();
+
+    bindEvents();
+    refreshUI();
+
+    function bindEvents() {
+      DOM.loadFilesBtn.addEventListener('click', () => DOM.fileInput.click());
+      DOM.fileInput.addEventListener('change', handleFileInput);
+      DOM.formatBtn.addEventListener('click', handleFormatBatch);
+      DOM.clearInputBtn.addEventListener('click', clearStaging);
+      DOM.downloadAllBtn.addEventListener('click', downloadAllDocuments);
+      DOM.downloadZipBtn.addEventListener('click', downloadZipBundle);
+      DOM.sourceInput.addEventListener('input', refreshUI);
+      bindDropZone();
+    }
+
+    function bindDropZone() {
+      const activate = () => DOM.dropZone.classList.add('active');
+      const deactivate = () => DOM.dropZone.classList.remove('active');
+
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        DOM.dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          activate();
+        });
+      });
+
+      ['dragleave', 'dragend', 'drop'].forEach((eventName) => {
+        DOM.dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          deactivate();
+        });
+      });
+
+      DOM.dropZone.addEventListener('drop', handleDrop);
+      DOM.dropZone.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          DOM.fileInput.click();
+        }
+      });
+    }
+
+    async function handleFileInput(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      const loaded = await loadFiles(files);
+
+      AppState.queuedSources.push(...loaded);
+      DOM.fileInput.value = '';
+      setStatus(`Queued ${loaded.length} file${loaded.length === 1 ? '' : 's'}.`, false);
+      refreshUI();
+    }
+
+    function clearStaging() {
+      DOM.sourceInput.value = '';
+      AppState.queuedSources = [];
+      setStatus('Staging cleared.', false);
+      refreshUI();
+    }
+
+    async function handleDrop(event) {
+      const dataTransfer = event.dataTransfer;
+      if (!dataTransfer) return;
+
+      if (dataTransfer.files && dataTransfer.files.length) {
+        const loaded = await loadFiles(Array.from(dataTransfer.files));
+        AppState.queuedSources.push(...loaded);
+        setStatus(`Dropped ${loaded.length} file${loaded.length === 1 ? '' : 's'} into staging.`, false);
+        refreshUI();
+        return;
+      }
+
+      const html = dataTransfer.getData('text/html');
+      const plain = dataTransfer.getData('text/plain');
+      const incoming = html ? htmlToText(html) : plain;
+      if (incoming && incoming.trim()) {
+        appendToTextarea(incoming.trim());
+        setStatus('Dropped text added to staging.', false);
+        refreshUI();
+      }
+    }
+
+    function getFormattingOptions() {
+      const presetKey = Object.prototype.hasOwnProperty.call(PRESET_CONFIG, DOM.presetSelect.value) ? DOM.presetSelect.value : 'auto';
+      return {
+        presetKey,
+        preset: PRESET_CONFIG[presetKey],
+        includeAtlas: DOM.atlasToggle.checked,
+        addAcronymAliases: DOM.aliasToggle.checked
+      };
+    }
+
+    function handleFormatBatch() {
+      const stagedSources = collectStagedSources();
+      if (!stagedSources.length) {
+        setStatus('No input found. Paste text or load files first.', true);
+        return;
+      }
+
+      const options = getFormattingOptions();
+
+      const rawDocs = [];
+      let sourceIndex = 0;
+
+      stagedSources.forEach((source) => {
+        const slices = splitIntoSourceBlocks(source.text);
+        slices.forEach((slice, index) => {
+          rawDocs.push({
+            id: `raw-${sourceIndex}-${index}-${Date.now()}`,
+            text: slice,
+            sourceName: source.name,
+            sourceKind: source.kind
+          });
+        });
+        sourceIndex += 1;
+      });
+
+      const prelim = rawDocs.map((raw, index) => analyzeRawDocument(raw, index, options));
+      const registry = buildEntityRegistry(prelim);
+      const candidateRefs = buildCandidateReferenceFrequency(prelim);
+      let finalDocs = prelim.map((doc, index) => finalizeDocument(doc, index, registry, candidateRefs, options));
+
+      if (options.includeAtlas) {
+        finalDocs = [buildAtlasDocument(finalDocs, options), ...finalDocs];
+      }
+
+      AppState.documents = finalDocs;
+      AppState.registrySize = registry.size;
+      AppState.lastRunOptions = options;
+      DOM.sourceInput.value = '';
+      AppState.queuedSources = [];
+
+      setStatus(`Built ${finalDocs.length} Markdown file${finalDocs.length === 1 ? '' : 's'} from ${stagedSources.length} staged source${stagedSources.length === 1 ? '' : 's'} using the ${options.preset.label} preset.`, false);
+      refreshUI();
+    }
+
+    function collectStagedSources() {
+      const staged = [];
+      const pasted = DOM.sourceInput.value.trim();
+
+      if (pasted) {
+        staged.push({
+          kind: 'pasted',
+          name: 'pasted-input',
+          text: normalizeImportedText(pasted, 'pasted-input')
+        });
+      }
+
+      return staged.concat(AppState.queuedSources);
+    }
+
+    async function loadFiles(files) {
+      const loaded = [];
+      for (const file of files) {
+        const raw = await file.text();
+        loaded.push({
+          kind: 'file',
+          name: file.name,
+          text: normalizeImportedText(raw, file.name)
+        });
+      }
+      return loaded;
+    }
+
+    function appendToTextarea(text) {
+      const current = DOM.sourceInput.value.trim();
+      DOM.sourceInput.value = current ? `${current}\n\n////\n\n${text}` : text;
+    }
+
+    function splitIntoSourceBlocks(text) {
+      return normalizeWhitespace(text)
+        .split(/\n\s*\/\/\/\/\s*\n/g)
+        .map((chunk) => chunk.trim())
+        .filter(Boolean);
+    }
+
+    function normalizeImportedText(text, filename) {
+      let normalized = normalizeWhitespace(text);
+      const lower = String(filename || '').toLowerCase();
+      if (lower.endsWith('.html') || lower.endsWith('.htm') || /<html[\s>]|<body[\s>]|<p[\s>]|<div[\s>]/i.test(normalized)) {
+        normalized = htmlToText(normalized);
+      } else if (lower.endsWith('.json')) {
+        normalized = normalizeJsonText(normalized);
+      }
+      return normalized.trim();
+    }
+
+    function normalizeJsonText(text) {
+      try {
+        const parsed = JSON.parse(text);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return text;
+      }
+    }
+
+    function htmlToText(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const body = doc.body || doc.documentElement;
+      return normalizeWhitespace(body.textContent || '');
+    }
+
+    function normalizeWhitespace(text) {
+      return String(text || '')
+        .replace(/\r\n?/g, '\n')
+        .replace(/\u00A0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n');
+    }
+
+    function analyzeRawDocument(raw, index, options) {
+      const lines = raw.text.split('\n');
+      const titleInfo = detectTitle(lines, raw.sourceName, index);
+      const extracted = extractMetadataAndBody(lines, titleInfo.titleLineIndex);
+      const sourceTitle = raw.sourceName && raw.sourceName !== 'pasted-input'
+        ? sanitizeTitle(raw.sourceName.replace(/\.[^.]+$/, ''))
+        : '';
+      const resolvedTitle = resolveDocumentTitle(extracted.meta.documentTitle, titleInfo, sourceTitle, index);
+      const typeInfo = inferEntityType(raw.text, extracted.meta, resolvedTitle, options);
+      const aliases = sanitizeAliasList([
+        ...extracted.meta.aliases,
+        ...(titleInfo.titleAlt ? [titleInfo.titleAlt] : []),
+        ...(sourceTitle && normalizeEntityKey(sourceTitle) !== normalizeEntityKey(resolvedTitle) ? [sourceTitle] : []),
+        ...(buildDefiniteArticleAlias(resolvedTitle) ? [buildDefiniteArticleAlias(resolvedTitle)] : []),
+        ...(buildHonorificStrippedAlias(resolvedTitle) ? [buildHonorificStrippedAlias(resolvedTitle)] : []),
+        ...(options.addAcronymAliases ? [buildAcronymAlias(resolvedTitle)] : [])
+      ]);
+      const thematicTags = inferTags(raw.text, extracted.meta, typeInfo, options);
+      const summary = buildSummary(extracted.bodyLines);
+      const sourceLabel = extracted.meta.sourceLabel || raw.sourceName;
+      const stats = collectStats(extracted.bodyLines, typeInfo);
+      const referenceCandidates = collectReferenceCandidates(extracted.bodyLines, extracted.meta);
+      const headings = detectHeadings(extracted.bodyLines);
+      const normalizedEntityType = normalizeEntityType(extracted.meta.type, typeInfo, raw.text);
+
+      return {
+        id: crypto.randomUUID(),
+        index,
+        sourceName: raw.sourceName,
+        sourceKind: raw.sourceKind,
+        rawText: raw.text,
+        title: resolvedTitle,
+        titleSlug: slugify(resolvedTitle || `document-${index + 1}`),
+        aliases,
+        meta: {
+          type: normalizedEntityType,
+          sourceType: extracted.meta.type || '',
+          role: extracted.meta.role || typeInfo.defaultRole || 'Reference',
+          tier: extracted.meta.tier || typeInfo.defaultTier || 'Standard',
+          location: extracted.meta.location || '',
+          faction: extracted.meta.faction || '',
+          parent: extracted.meta.parent || extracted.meta.campaign || '',
+          campaign: extracted.meta.campaign || '',
+          sourceLabel
+        },
+        bodyLines: extracted.bodyLines,
+        stats,
+        referenceCandidates,
+        headings,
+        summary,
+        thematicTags
+      };
+    }
+
+    function detectTitle(lines, sourceName, index) {
+      let inFrontmatter = false;
+
+      for (let i = 0; i < lines.length; i += 1) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        if (i === 0 && line === '---') {
+          inFrontmatter = true;
+          continue;
+        }
+
+        if (inFrontmatter) {
+          if (line === '---') {
+            inFrontmatter = false;
+            continue;
+          }
+          const frontmatterTitle = line.match(/^(title|name)\s*:\s*(.+)$/i);
+          if (frontmatterTitle) {
+            return { title: sanitizeTitle(frontmatterTitle[2]), rawTitle: frontmatterTitle[2], titleLineIndex: i, titleAlt: '' };
+          }
+          continue;
+        }
+
+        if (looksLikeTaxonomyHash(line)) continue;
+
+        const heading = line.match(/^#{1,6}\s+(.+)/);
+        if (heading) {
+          return { title: sanitizeTitle(heading[1]), rawTitle: heading[1], titleLineIndex: i, titleAlt: '' };
+        }
+
+        const labelMatch = line.match(/^(title|name)\s*:\s*(.+)$/i);
+        if (labelMatch) {
+          return { title: sanitizeTitle(labelMatch[2]), rawTitle: labelMatch[2], titleLineIndex: i, titleAlt: '' };
+        }
+
+        if (!isMetadataLine(line) && !looksLikeSeparator(line) && !line.startsWith('#')) {
+          return { title: sanitizeTitle(line), rawTitle: line, titleLineIndex: i, titleAlt: '' };
+        }
+      }
+
+      const fallback = sourceName && sourceName !== 'pasted-input'
+        ? sourceName.replace(/\.[^.]+$/, '')
+        : `Document ${index + 1}`;
+      return { title: sanitizeTitle(fallback), rawTitle: fallback, titleLineIndex: -1, titleAlt: '' };
+    }
+
+    function extractMetadataAndBody(lines, titleLineIndex) {
+      const meta = {
+        aliases: [],
+        tags: []
+      };
+      const bodyLines = [];
+
+      let inFrontmatter = false;
+      let frontmatterSeen = false;
+      let frontmatterListKey = '';
+
+      for (let i = 0; i < lines.length; i += 1) {
+        let line = lines[i];
+        const trimmed = line.trim();
+
+        if (i === 0 && trimmed === '---') {
+          inFrontmatter = true;
+          frontmatterSeen = true;
+          continue;
+        }
+
+        if (inFrontmatter) {
+          if (trimmed === '---') {
+            inFrontmatter = false;
+            frontmatterListKey = '';
+            continue;
+          }
+          if (!trimmed) {
+            frontmatterListKey = '';
+            continue;
+          }
+          const listItem = trimmed.match(/^-\s+(.+)$/);
+          if (frontmatterListKey && listItem) {
+            appendMetadataValue(meta, frontmatterListKey, listItem[1].trim());
+            continue;
+          }
+          frontmatterListKey = parseFrontmatterLine(trimmed, meta);
+          continue;
+        }
+
+        if (i === titleLineIndex) continue;
+
+        if (parseMetadataLine(trimmed, meta)) continue;
+
+        if (frontmatterSeen && trimmed === '...') continue;
+
+        bodyLines.push(line);
+      }
+
+      return {
+        meta,
+        bodyLines: cleanupBodyLines(bodyLines)
+      };
+    }
+
+    function parseMetadataLine(line, meta) {
+      if (!line) return false;
+      const match = line.match(/^([A-Za-z][A-Za-z0-9 _-]{1,30})\s*:\s*(.+)$/);
+      if (!match) return false;
+
+      const rawKey = match[1].trim().toLowerCase();
+      const normalizedKey = METADATA_KEYS[rawKey];
+      if (!normalizedKey) return false;
+
+      const value = match[2].trim();
+      if (!value) return true;
+      appendMetadataValue(meta, normalizedKey, value, rawKey);
+      return true;
+    }
+
+    function parseFrontmatterLine(line, meta) {
+      if (!line) return '';
+
+      const openList = line.match(/^([A-Za-z][A-Za-z0-9 _-]{1,30})\s*:\s*$/);
+      if (openList) {
+        const normalizedKey = METADATA_KEYS[openList[1].trim().toLowerCase()];
+        return normalizedKey || '';
+      }
+
+      parseMetadataLine(line, meta);
+      return '';
+    }
+
+    function appendMetadataValue(meta, normalizedKey, value, rawKey = '') {
+      const cleaned = sanitizeTitle(value);
+      if (!cleaned) return;
+
+      if (normalizedKey === 'documentTitle') {
+        const existingTitle = sanitizeTitle(meta.documentTitle);
+        if (!existingTitle) {
+          meta.documentTitle = cleaned;
+          return;
+        }
+        if (normalizeEntityKey(existingTitle) === normalizeEntityKey(cleaned)) return;
+        if (String(rawKey).toLowerCase() === 'name') {
+          meta.aliases.push(existingTitle);
+          meta.documentTitle = cleaned;
+          return;
+        }
+        meta.aliases.push(cleaned);
+        return;
+      }
+
+      if (normalizedKey === 'aliases') {
+        meta.aliases.push(...splitListLikeValue(cleaned));
+        return;
+      }
+
+      if (normalizedKey === 'tags') {
+        meta.tags.push(...splitListLikeValue(cleaned));
+        return;
+      }
+
+      if (meta[normalizedKey]) {
+        const existing = splitListLikeValue(meta[normalizedKey]);
+        const incoming = splitListLikeValue(cleaned);
+        meta[normalizedKey] = dedupeBy([...existing, ...incoming], (item) => normalizeEntityKey(item)).join(', ');
+        return;
+      }
+
+      meta[normalizedKey] = cleaned;
+    }
+
+    function cleanupBodyLines(lines) {
+      const cleaned = [];
+      let blankRun = 0;
+
+      lines.forEach((line) => {
+        const trimmed = line.trimEnd();
+        if (!trimmed.trim()) {
+          blankRun += 1;
+          if (blankRun <= 1) cleaned.push('');
+          return;
+        }
+
+        blankRun = 0;
+        if (looksLikeSeparator(trimmed.trim())) {
+          cleaned.push('---');
+          return;
+        }
+        if (looksLikeTaxonomyHash(trimmed.trim())) {
+          return;
+        }
+        if (/^!\[[^\]]*\]\((https?:)?\/\//i.test(trimmed.trim())) {
+          return;
+        }
+        cleaned.push(trimmed);
+      });
+
+      return cleaned.join('\n').trim().split('\n');
+    }
+
+    function inferEntityType(text, meta, title, options) {
+      const haystack = `${text}\n${Object.values(meta).join('\n')}`.toLowerCase();
+      const identitySignals = `${title || ''}\n${meta.role || ''}\n${meta.type || ''}`;
+
+      if (options.preset.biasType === 'Creature' && /(armor class|hit points|challenge|damage|attack)/.test(haystack)) {
+        return { entityType: 'Creature', defaultRole: 'Encounter', defaultTier: 'Standard' };
+      }
+      if (options.preset.biasType === 'NPC' && (CHARACTER_ROLE_HINTS.test(identitySignals) || /speaks|personality|appearance/.test(haystack))) {
+        return { entityType: 'NPC', defaultRole: 'Character', defaultTier: 'Standard' };
+      }
+      if (options.preset.biasType === 'Location' && /(village|city|keep|ruins|forest|mountain|district|road|pass|harbor|temple)/.test(haystack)) {
+        return { entityType: 'Location', defaultRole: 'Place', defaultTier: 'Region' };
+      }
+      if (options.preset.biasType === 'Faction' && /(guild|order|house|clan|faction|legion|cabal|church)/.test(haystack)) {
+        return { entityType: 'Faction', defaultRole: 'Group', defaultTier: 'Standard' };
+      }
+      if (options.preset.biasType === 'Item' && /(wondrous item|rarity|attunement|weapon|armor \(|requires attunement)/.test(haystack)) {
+        return { entityType: 'Item', defaultRole: 'Asset', defaultTier: 'Standard' };
+      }
+      if (options.preset.biasType === 'Session Note' && /(session|agenda|objective|loot|recap)/.test(haystack)) {
+        return { entityType: 'Session Note', defaultRole: 'Log', defaultTier: 'Session' };
+      }
+
+      if (/(armor class|hit points|challenge rating|saving throws|damage resistances)/.test(haystack)) {
+        return { entityType: 'Creature', defaultRole: 'Encounter', defaultTier: 'Standard' };
+      }
+      if (/(casting time|components|duration|spell save dc|spell attack)/.test(haystack)) {
+        return { entityType: 'Spell', defaultRole: 'Ability', defaultTier: 'Spell' };
+      }
+      if (/(wondrous item|rarity|attunement|weapon|armor \(|requires attunement)/.test(haystack)) {
+        return { entityType: 'Item', defaultRole: 'Asset', defaultTier: 'Standard' };
+      }
+      if (CHARACTER_ROLE_HINTS.test(identitySignals)) {
+        return { entityType: 'NPC', defaultRole: 'Character', defaultTier: 'Standard' };
+      }
+      if (/(village|city|keep|ruins|forest|mountain|district|road|pass|harbor|temple)/.test(haystack)) {
+        return { entityType: 'Location', defaultRole: 'Place', defaultTier: 'Region' };
+      }
+      if (/(guild|order|house|clan|faction|legion|cabal|church)/.test(haystack)) {
+        return { entityType: 'Faction', defaultRole: 'Group', defaultTier: 'Standard' };
+      }
+      if (/(appearance|personality|voice|ideal|bond|flaw|speaks)/.test(haystack)) {
+        return { entityType: 'NPC', defaultRole: 'Character', defaultTier: 'Standard' };
+      }
+      if (/(session|agenda|objective|loot|recap)/.test(haystack)) {
+        return { entityType: 'Session Note', defaultRole: 'Log', defaultTier: 'Session' };
+      }
+      return { entityType: 'Lore', defaultRole: 'Reference', defaultTier: 'Standard' };
+    }
+
+    function inferTags(text, meta, typeInfo, options) {
+      const tags = new Set(['dnd', 'obsidian-ready', 'notebooklm-ready', slugify(typeInfo.entityType)]);
+      options.preset.tags.forEach((tag) => tags.add(tag));
+      splitListLikeValue(meta.tags || []).forEach((tag) => tags.add(slugify(tag)));
+
+      const lower = text.toLowerCase();
+      if (/combat|attack|damage|initiative/.test(lower)) tags.add('combat');
+      if (/magic|spell|ritual|arcane|divine/.test(lower)) tags.add('magic');
+      if (/city|road|keep|region|district|forest|mountain/.test(lower)) tags.add('geography');
+      if (/faction|order|guild|house|clan/.test(lower)) tags.add('faction');
+      if (/history|legend|origin|myth/.test(lower)) tags.add('lore');
+
+      return Array.from(tags).filter(Boolean);
+    }
+
+    function buildSummary(lines) {
+      const paragraphs = lines
+        .map((line) => line.trim())
+        .filter((line) =>
+          line &&
+          line !== '---' &&
+          !/^!\[\[.+\]\]$/.test(line) &&
+          !/^\*\*tags\*\*:/i.test(line) &&
+          !looksLikeHeading(line) &&
+          !looksLikeList(line) &&
+          !isMetadataLine(line) &&
+          !looksLikeLabeledField(line) &&
+          !looksLikeStatLine(line)
+        );
+
+      if (!paragraphs.length) return 'No summary inferred from source text.';
+
+      const joined = paragraphs.join(' ');
+      const sentences = joined.match(/[^.!?]+[.!?]?/g) || [joined];
+      return sentences.slice(0, 2).join(' ').trim();
+    }
+
+    function collectStats(lines, typeInfo) {
+      const stats = [];
+      lines.forEach((line) => {
+        const match = line.trim().match(/^([A-Za-z][A-Za-z0-9 ()'\/+-]{1,40})\s*:\s*(.+)$/);
+        if (!match) return;
+
+        const label = match[1].trim();
+        const value = match[2].trim();
+        const lower = label.toLowerCase();
+        if (STATS_LABELS.has(lower) || typeInfo.entityType === 'Creature' || typeInfo.entityType === 'Spell' || typeInfo.entityType === 'Item') {
+          if (!METADATA_KEYS[lower]) {
+            stats.push({ label, value });
+          }
+        }
+      });
+      return dedupeBy(stats, (entry) => `${entry.label}::${entry.value}`);
+    }
+
+    function collectReferenceCandidates(lines, meta) {
+      const candidates = new Set();
+      [meta.location, meta.faction, meta.parent, meta.campaign]
+        .flatMap((value) => splitListLikeValue(value))
+        .map((value) => sanitizeTitle(value))
+        .filter(Boolean)
+        .forEach((value) => candidates.add(value));
+
+      lines.forEach((line) => {
+        collectProperNouns(line).forEach((candidate) => candidates.add(candidate));
+      });
+
+      return Array.from(candidates);
+    }
+
+    function detectHeadings(lines) {
+      return lines
+        .map((line) => line.trim())
+        .filter((line) => {
+          const normalized = normalizeHeading(line);
+          return (
+            looksLikeHeading(line) &&
+            normalized &&
+            !looksLikeStatLine(normalized) &&
+            !isMetadataLine(normalized) &&
+            !isNoisyHeading(normalized)
+          );
+        })
+        .map((line) => normalizeHeading(line));
+    }
+
+    function buildEntityRegistry(docs) {
+      const registry = new Map();
+
+      docs.forEach((doc) => {
+        const labels = new Set([doc.title, ...doc.aliases].filter(Boolean));
+        labels.forEach((label) => {
+          const key = normalizeEntityKey(label);
+          if (!key || STOPWORD_LINKS.has(label)) return;
+
+          const current = registry.get(key);
+          if (!current) {
+            registry.set(key, { target: doc.title, count: 1 });
+          } else if (current.target === doc.title) {
+            current.count += 1;
+          } else {
+            current.ambiguous = true;
+          }
+        });
+      });
+
+      for (const [key, entry] of registry.entries()) {
+        if (entry.ambiguous) registry.delete(key);
+      }
+
+      return registry;
+    }
+
+    function buildCandidateReferenceFrequency(docs) {
+      const counts = new Map();
+
+      docs.forEach((doc) => {
+        const local = new Set();
+        [doc.meta.location, doc.meta.faction, doc.meta.parent, doc.meta.campaign]
+          .flatMap((value) => splitListLikeValue(value))
+          .map((value) => sanitizeTitle(value))
+          .filter(Boolean)
+          .forEach((value) => local.add(value));
+
+        doc.referenceCandidates.forEach((value) => local.add(value));
+        collectProperNouns(doc.summary).forEach((value) => local.add(value));
+        doc.bodyLines.forEach((line) => {
+          collectProperNouns(line).forEach((value) => local.add(value));
+        });
+
+        local.forEach((value) => {
+          const key = normalizeEntityKey(value);
+          counts.set(key, (counts.get(key) || 0) + 1);
+        });
+      });
+
+      return counts;
+    }
+
+    function finalizeDocument(doc, index, registry, candidateRefs, options) {
+      const filename = makeUniqueFilename(doc.title || `document-${index + 1}`, index);
+
+      const processedBody = rewriteBody(doc, registry, candidateRefs);
+      const related = collectRelatedLinks(doc, processedBody, registry);
+      const stubLinks = collectStubLinks(doc, processedBody, registry, candidateRefs);
+      const frontmatter = buildFrontmatter(doc, related, stubLinks);
+      const markdown = buildMarkdown(doc, processedBody, related, stubLinks, frontmatter, options);
+
+      return {
+        id: doc.id,
+        title: doc.title,
+        filename,
+        markdown,
+        summary: doc.summary,
+        entityType: doc.meta.type,
+        tags: doc.thematicTags,
+        sourceName: doc.sourceName,
+        related,
+        stubLinks
+      };
+    }
+
+    function rewriteBody(doc, registry, candidateRefs) {
+      const output = [];
+      let previousBlank = false;
+
+      doc.bodyLines.forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          if (!previousBlank) output.push('');
+          previousBlank = true;
+          return;
+        }
+
+        previousBlank = false;
+
+        if (isMetadataLine(trimmed)) return;
+
+        const normalizedHeading = normalizeHeading(trimmed);
+        if (looksLikeHeading(trimmed) && normalizedHeading && !looksLikeStatLine(normalizedHeading) && !isNoisyHeading(normalizedHeading)) {
+          output.push(`### ${normalizedHeading}`);
+          return;
+        }
+
+        if (looksLikeList(trimmed) || looksLikeTable(trimmed) || looksLikeBlockQuote(trimmed)) {
+          output.push(linkText(trimmed, doc, registry, candidateRefs));
+          return;
+        }
+
+        if (looksLikeStatLine(trimmed)) {
+          return;
+        }
+
+        output.push(linkText(trimmed, doc, registry, candidateRefs));
+      });
+
+      return collapseBlanks(output).join('\n').trim();
+    }
+
+    function linkText(text, doc, registry, candidateRefs) {
+      let working = normalizeExistingWikilinks(text, registry);
+      const protectedLinks = protectExistingLinks(working);
+      working = protectedLinks.text;
+
+      const labelMap = new Map();
+
+      for (const [key, entry] of registry.entries()) {
+        if (entry.target === doc.title) continue;
+        labelMap.set(entry.target, entry.target);
+      }
+
+      const metadataCandidates = [doc.meta.location, doc.meta.faction, doc.meta.parent, doc.meta.campaign]
+        .filter(Boolean)
+        .map((value) => value.trim());
+      metadataCandidates.forEach((value) => labelMap.set(value, value));
+
+      const sortedLabels = Array.from(labelMap.keys())
+        .filter((value) => !STOPWORD_LINKS.has(value))
+        .sort((a, b) => b.length - a.length);
+
+      sortedLabels.forEach((label) => {
+        const key = normalizeEntityKey(label);
+        const entry = registry.get(key);
+        const target = entry ? entry.target : label;
+        if (!target || target === doc.title) return;
+
+        const pattern = new RegExp(`(^|[^\\w\\]])(${escapeRegExp(label)})(?=([^\\w\\[]|$))`, 'g');
+        working = working.replace(pattern, (full, before, matched, after) => {
+          return `${before}[[${target}|${matched}]]`;
+        });
+      });
+
+      const unresolved = collectProperNouns(text).filter((candidate) => {
+        if (candidate === doc.title || STOPWORD_LINKS.has(candidate)) return false;
+        if (!shouldLinkAsUnresolved(candidate)) return false;
+        if (isDocumentSelfReference(candidate, doc)) return false;
+        const key = normalizeEntityKey(candidate);
+        if (registry.has(key)) return false;
+        return (candidateRefs.get(key) || 0) > 1;
+      });
+
+      unresolved.sort((a, b) => b.length - a.length).forEach((candidate) => {
+        const pattern = new RegExp(`(^|[^\\w\\]])(${escapeRegExp(candidate)})(?=([^\\w\\[]|$))`, 'g');
+        working = working.replace(pattern, (full, before, matched) => `${before}[[${matched}]]`);
+      });
+
+      return restoreExistingLinks(working, protectedLinks.links);
+    }
+
+    function buildFrontmatter(doc, related, stubLinks) {
+      const lines = ['---'];
+      lines.push(`title: ${yamlQuote(doc.title)}`);
+      if (doc.aliases.length) {
+        lines.push('aliases:');
+        doc.aliases.forEach((alias) => lines.push(`  - ${yamlQuote(alias)}`));
+      } else {
+        lines.push('aliases: []');
+      }
+
+      lines.push('tags:');
+      doc.thematicTags.forEach((tag) => lines.push(`  - ${yamlQuote(tag)}`));
+      lines.push(`entity_type: ${yamlQuote(doc.meta.type)}`);
+      if (doc.meta.sourceType && normalizeEntityKey(doc.meta.sourceType) !== normalizeEntityKey(doc.meta.type)) {
+        lines.push(`source_type: ${yamlQuote(doc.meta.sourceType)}`);
+      }
+      lines.push(`role: ${yamlQuote(doc.meta.role)}`);
+      lines.push(`tier: ${yamlQuote(doc.meta.tier)}`);
+      lines.push(`source_kind: ${yamlQuote(doc.sourceKind)}`);
+      lines.push(`source_name: ${yamlQuote(doc.sourceName)}`);
+      if (doc.meta.location) lines.push(`location: ${yamlQuote(doc.meta.location)}`);
+      if (doc.meta.faction) lines.push(`faction: ${yamlQuote(doc.meta.faction)}`);
+      if (doc.meta.parent) lines.push(`parent: ${yamlQuote(doc.meta.parent)}`);
+      if (doc.meta.campaign) lines.push(`campaign: ${yamlQuote(doc.meta.campaign)}`);
+      if (related.length) {
+        lines.push('related:');
+        related.forEach((item) => lines.push(`  - ${yamlQuote(item)}`));
+      } else {
+        lines.push('related: []');
+      }
+      if (stubLinks.length) {
+        lines.push('stub_links:');
+        stubLinks.forEach((item) => lines.push(`  - ${yamlQuote(item)}`));
+      } else {
+        lines.push('stub_links: []');
+      }
+      lines.push('---');
+      return lines.join('\n');
+    }
+
+    function buildMarkdown(doc, processedBody, related, stubLinks, frontmatter, options) {
+      const lines = [frontmatter, '', `# ${doc.title}`, ''];
+
+      lines.push('## Synopsis');
+      lines.push(doc.summary);
+      lines.push('');
+
+      lines.push('## Structured Facts');
+      lines.push(`- Entity Type: ${doc.meta.type}`);
+      if (doc.meta.sourceType && normalizeEntityKey(doc.meta.sourceType) !== normalizeEntityKey(doc.meta.type)) {
+        lines.push(`- Source Type: ${doc.meta.sourceType}`);
+      }
+      lines.push(`- Role: ${doc.meta.role}`);
+      lines.push(`- Tier: ${doc.meta.tier}`);
+      if (doc.meta.location) lines.push(`- Location: ${formatFieldValue(doc.meta.location)}`);
+      if (doc.meta.faction) lines.push(`- Faction: ${formatFieldValue(doc.meta.faction)}`);
+      if (doc.meta.parent) lines.push(`- Parent: ${formatFieldValue(doc.meta.parent)}`);
+      if (doc.meta.campaign) lines.push(`- Campaign: ${formatFieldValue(doc.meta.campaign)}`);
+      lines.push(`- Source: ${doc.sourceName}`);
+      lines.push('');
+
+      if (doc.stats.length) {
+        lines.push('## Stats');
+        doc.stats.forEach((stat) => {
+          lines.push(`- ${stat.label}: ${stat.value}`);
+        });
+        lines.push('');
+      }
+
+      lines.push('## Semantic Index');
+      lines.push(`- Primary Tags: ${doc.thematicTags.join(', ')}`);
+      lines.push(`- Corpus Preset: ${options.preset.label}`);
+      if (doc.headings.length) lines.push(`- Source Headings: ${doc.headings.join(', ')}`);
+      if (related.length) lines.push(`- Linked References: ${related.join(', ')}`);
+      if (stubLinks.length) lines.push(`- Probable Internal References: ${stubLinks.join(', ')}`);
+      lines.push('');
+
+      if (processedBody) {
+        lines.push('## Content');
+        lines.push(processedBody);
+        lines.push('');
+      }
+
+      if (related.length || stubLinks.length) {
+        lines.push('## References');
+        related.forEach((item) => lines.push(`- ${item}`));
+        stubLinks.forEach((item) => lines.push(`- ${item} (unresolved)`));
+        lines.push('');
+      }
+
+      return collapseBlanks(lines).join('\n').trim() + '\n';
+    }
+
+    function buildAtlasDocument(documents, options) {
+      const counts = new Map();
+      documents.forEach((doc) => {
+        counts.set(doc.entityType, (counts.get(doc.entityType) || 0) + 1);
+      });
+
+      const typeSummary = Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([type, count]) => `- ${type}: ${count}`)
+        .join('\n');
+
+      const rows = documents.map((doc) => {
+        const role = escapePipes(extractRoleFromMarkdown(doc.markdown));
+        const summary = escapePipes(doc.summary);
+        return `| [[${doc.title}]] | ${escapePipes(doc.entityType)} | ${role} | ${summary} |`;
+      });
+
+      const unresolved = documents
+        .filter((doc) => doc.stubLinks.length)
+        .map((doc) => `- [[${doc.title}]] -> ${doc.stubLinks.join(', ')}`)
+        .join('\n');
+
+      const title = options.preset.atlasTitle;
+      const markdown = [
+        '---',
+        `title: ${yamlQuote(title)}`,
+        'aliases: []',
+        'tags:',
+        '  - "dnd"',
+        '  - "obsidian-ready"',
+        '  - "notebooklm-ready"',
+        '  - "vault-atlas"',
+        `  - ${yamlQuote(slugify(options.preset.label))}`,
+        'entity_type: "Atlas"',
+        'role: "Index"',
+        'tier: "Corpus"',
+        'source_kind: "generated"',
+        'source_name: "vault-architect"',
+        'related: []',
+        'stub_links: []',
+        '---',
+        '',
+        `# ${title}`,
+        '',
+        '## Synopsis',
+        `Top-level index for ${documents.length} generated notes. This atlas is meant to improve vault navigation in Obsidian and provide NotebookLM with a compact structural summary of the corpus.`,
+        '',
+        '## Corpus Summary',
+        `- Preset: ${options.preset.label}`,
+        `- Generated Notes: ${documents.length}`,
+        typeSummary || '- No typed notes detected.',
+        '',
+        '## Note Table',
+        '| Note | Type | Role | Synopsis |',
+        '| --- | --- | --- | --- |',
+        ...rows,
+        '',
+        '## Unresolved Reference Hotspots',
+        unresolved || '- None detected.',
+        ''
+      ].join('\n');
+
+      return {
+        id: crypto.randomUUID(),
+        title,
+        filename: `_vault-atlas-${slugify(options.preset.label)}.md`,
+        markdown,
+        summary: `Index note covering ${documents.length} generated files for the ${options.preset.label} corpus preset.`,
+        entityType: 'Atlas',
+        tags: ['dnd', 'obsidian-ready', 'notebooklm-ready', 'vault-atlas'],
+        sourceName: 'vault-architect',
+        related: documents.map((doc) => `[[${doc.title}]]`),
+        stubLinks: []
+      };
+    }
+
+    function collectRelatedLinks(doc, processedBody, registry) {
+      const related = new Map();
+      const addRelated = (value) => {
+        if (!value) return;
+        const target = value.includes('|') ? value.slice(2, value.indexOf('|')) : value.slice(2, -2);
+        const key = normalizeEntityKey(target);
+        if (!key || key === normalizeEntityKey(doc.title)) return;
+        if (!related.has(key)) related.set(key, `[[${target}]]`);
+      };
+      const explicitValues = [doc.meta.location, doc.meta.faction, doc.meta.parent, doc.meta.campaign]
+        .filter(Boolean);
+      const explicit = explicitValues
+        .map((value) => {
+          const key = normalizeEntityKey(value);
+          const entry = registry.get(key);
+          return entry ? `[[${entry.target}]]` : `[[${value.trim()}]]`;
+        });
+      const explicitKeys = new Set(explicitValues.map((value) => normalizeEntityKey(value)));
+
+      explicit.forEach(addRelated);
+      (processedBody.match(/\[\[[^\]]+\]\]/g) || []).forEach((value) => {
+        const target = value.includes('|') ? value.slice(2, value.indexOf('|')) : value.slice(2, -2);
+        const key = normalizeEntityKey(target);
+        if (registry.has(key) || explicitKeys.has(key)) {
+          addRelated(`[[${target}]]`);
+        }
+      });
+      return Array.from(related.values()).filter(Boolean).sort();
+    }
+
+    function collectStubLinks(doc, processedBody, registry, candidateRefs) {
+      const stubLinks = new Set();
+      const explicitKeys = new Set(
+        [doc.meta.location, doc.meta.faction, doc.meta.parent, doc.meta.campaign]
+          .filter(Boolean)
+          .map((value) => normalizeEntityKey(value))
+      );
+      const candidates = new Set([
+        ...collectProperNouns(processedBody),
+        ...doc.referenceCandidates
+      ]);
+      candidates.forEach((candidate) => {
+        const key = normalizeEntityKey(candidate);
+        if (registry.has(key) || explicitKeys.has(key) || candidate === doc.title || STOPWORD_LINKS.has(candidate)) return;
+        if (!shouldLinkAsUnresolved(candidate)) return;
+        if (isDocumentSelfReference(candidate, doc)) return;
+        if ((candidateRefs.get(key) || 0) > 1) {
+          stubLinks.add(`[[${candidate}]]`);
+        }
+      });
+      return Array.from(stubLinks).sort();
+    }
+
+    function refreshUI() {
+      DOM.queuedCount.textContent = String(AppState.queuedSources.length + (DOM.sourceInput.value.trim() ? splitIntoSourceBlocks(DOM.sourceInput.value).length : 0));
+      DOM.docCount.textContent = String(AppState.documents.length);
+      DOM.entityCount.textContent = String(AppState.registrySize);
+
+      renderFileBadges();
+      renderDocuments();
+
+      const hasDocs = AppState.documents.length > 0;
+      DOM.downloadAllBtn.disabled = !hasDocs;
+      DOM.downloadZipBtn.disabled = !hasDocs;
+    }
+
+    function renderFileBadges() {
+      DOM.fileBadges.innerHTML = '';
+      if (DOM.sourceInput.value.trim()) {
+        const blocks = splitIntoSourceBlocks(DOM.sourceInput.value).length;
+        const badge = document.createElement('span');
+        badge.className = 'badge soft';
+        badge.textContent = `${blocks} pasted block${blocks === 1 ? '' : 's'}`;
+        DOM.fileBadges.appendChild(badge);
+      }
+      AppState.queuedSources.forEach((source) => {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = source.name;
+        DOM.fileBadges.appendChild(badge);
+      });
+    }
+
+    function renderDocuments() {
+      DOM.docList.innerHTML = '';
+
+      if (!AppState.documents.length) {
+        DOM.docList.appendChild(DOM.emptyState);
+        return;
+      }
+
+      AppState.documents.forEach((doc, index) => {
+        const details = document.createElement('details');
+        details.className = 'doc-card';
+        if (index === 0) details.open = true;
+
+        const summary = document.createElement('summary');
+        summary.innerHTML = `
+          <div class="doc-head">
+            <h3 class="doc-title">${escapeHtml(doc.title)}</h3>
+            <div class="doc-meta">
+              <span class="pill">${escapeHtml(doc.entityType)}</span>
+              <span class="pill">${escapeHtml(doc.filename)}</span>
+              <span class="pill">${escapeHtml(doc.tags.slice(0, 3).join(', '))}</span>
+            </div>
+          </div>
+          <div class="doc-actions">
+            <button class="mini" type="button" data-action="copy" data-id="${doc.id}">Copy</button>
+            <button class="mini" type="button" data-action="download" data-id="${doc.id}">Download</button>
+          </div>
+        `;
+
+        const body = document.createElement('div');
+        body.className = 'doc-body';
+        body.innerHTML = `
+          <div class="grid">
+            <div class="panel-note">
+              <h4>Summary</h4>
+              <div>${escapeHtml(doc.summary)}</div>
+              <h4 style="margin-top:0.8rem;">References</h4>
+              <div>${escapeHtml((doc.related.length ? doc.related : doc.stubLinks).join(', ') || 'None detected')}</div>
+            </div>
+            <pre class="preview">${escapeHtml(doc.markdown)}</pre>
+          </div>
+        `;
+
+        details.appendChild(summary);
+        details.appendChild(body);
+        DOM.docList.appendChild(details);
+      });
+
+      DOM.docList.querySelectorAll('[data-action="download"]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const doc = AppState.documents.find((item) => item.id === button.dataset.id);
+          if (doc) downloadText(doc.filename, doc.markdown, 'text/markdown');
+        });
+      });
+
+      DOM.docList.querySelectorAll('[data-action="copy"]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const doc = AppState.documents.find((item) => item.id === button.dataset.id);
+          if (!doc) return;
+          try {
+            await navigator.clipboard.writeText(doc.markdown);
+            setStatus(`Copied ${doc.filename} to clipboard.`, false);
+          } catch {
+            setStatus(`Clipboard write failed for ${doc.filename}. Browser permissions, naturally.`, true);
+          }
+        });
+      });
+    }
+
+    function downloadAllDocuments() {
+      AppState.documents.forEach((doc, index) => {
+        setTimeout(() => {
+          downloadText(doc.filename, doc.markdown, 'text/markdown');
+        }, index * 180);
+      });
+    }
+
+    function downloadZipBundle() {
+      const manifest = {
+        generated_at: new Date().toISOString(),
+        document_count: AppState.documents.length,
+        preset: AppState.lastRunOptions ? AppState.lastRunOptions.preset.label : getFormattingOptions().preset.label,
+        documents: AppState.documents.map((doc) => ({
+          title: doc.title,
+          filename: doc.filename,
+          entity_type: doc.entityType,
+          related: doc.related,
+          stub_links: doc.stubLinks
+        }))
+      };
+
+      const files = AppState.documents.map((doc) => ({
+        name: doc.filename,
+        content: doc.markdown
+      }));
+
+      files.push({
+        name: 'manifest.json',
+        content: JSON.stringify(manifest, null, 2)
+      });
+
+      const zipBlob = createZipBlob(files);
+      downloadBlob('vault-architect-export.zip', zipBlob);
+    }
+
+    function downloadText(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      downloadBlob(filename, blob);
+    }
+
+    function downloadBlob(filename, blob) {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.rel = 'noopener';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function createZipBlob(files) {
+      const encoder = new TextEncoder();
+      const chunks = [];
+      const centralChunks = [];
+      let offset = 0;
+
+      files.forEach((file) => {
+        const nameBytes = encoder.encode(file.name);
+        const dataBytes = encoder.encode(file.content);
+        const crc = crc32(dataBytes);
+        const dos = toDosDateTime(new Date());
+
+        const localHeader = new Uint8Array(30 + nameBytes.length);
+        const localView = new DataView(localHeader.buffer);
+        localView.setUint32(0, 0x04034b50, true);
+        localView.setUint16(4, 20, true);
+        localView.setUint16(6, 0, true);
+        localView.setUint16(8, 0, true);
+        localView.setUint16(10, dos.time, true);
+        localView.setUint16(12, dos.date, true);
+        localView.setUint32(14, crc, true);
+        localView.setUint32(18, dataBytes.length, true);
+        localView.setUint32(22, dataBytes.length, true);
+        localView.setUint16(26, nameBytes.length, true);
+        localView.setUint16(28, 0, true);
+        localHeader.set(nameBytes, 30);
+
+        chunks.push(localHeader, dataBytes);
+
+        const centralHeader = new Uint8Array(46 + nameBytes.length);
+        const centralView = new DataView(centralHeader.buffer);
+        centralView.setUint32(0, 0x02014b50, true);
+        centralView.setUint16(4, 20, true);
+        centralView.setUint16(6, 20, true);
+        centralView.setUint16(8, 0, true);
+        centralView.setUint16(10, 0, true);
+        centralView.setUint16(12, dos.time, true);
+        centralView.setUint16(14, dos.date, true);
+        centralView.setUint32(16, crc, true);
+        centralView.setUint32(20, dataBytes.length, true);
+        centralView.setUint32(24, dataBytes.length, true);
+        centralView.setUint16(28, nameBytes.length, true);
+        centralView.setUint16(30, 0, true);
+        centralView.setUint16(32, 0, true);
+        centralView.setUint16(34, 0, true);
+        centralView.setUint16(36, 0, true);
+        centralView.setUint32(38, 0, true);
+        centralView.setUint32(42, offset, true);
+        centralHeader.set(nameBytes, 46);
+        centralChunks.push(centralHeader);
+
+        offset += localHeader.length + dataBytes.length;
+      });
+
+      const centralSize = centralChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const endRecord = new Uint8Array(22);
+      const endView = new DataView(endRecord.buffer);
+      endView.setUint32(0, 0x06054b50, true);
+      endView.setUint16(4, 0, true);
+      endView.setUint16(6, 0, true);
+      endView.setUint16(8, files.length, true);
+      endView.setUint16(10, files.length, true);
+      endView.setUint32(12, centralSize, true);
+      endView.setUint32(16, offset, true);
+      endView.setUint16(20, 0, true);
+
+      return new Blob([...chunks, ...centralChunks, endRecord], { type: 'application/zip' });
+    }
+
+    function crc32(bytes) {
+      let crc = 0 ^ -1;
+      for (let i = 0; i < bytes.length; i += 1) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xff];
+      }
+      return (crc ^ -1) >>> 0;
+    }
+
+    function toDosDateTime(date) {
+      const year = Math.max(1980, date.getFullYear());
+      return {
+        time: ((date.getHours() & 0x1f) << 11) | ((date.getMinutes() & 0x3f) << 5) | ((Math.floor(date.getSeconds() / 2)) & 0x1f),
+        date: (((year - 1980) & 0x7f) << 9) | (((date.getMonth() + 1) & 0x0f) << 5) | (date.getDate() & 0x1f)
+      };
+    }
+
+    function sanitizeAliasList(values) {
+      return dedupeBy(values.flatMap((value) => splitListLikeValue(value)).map(sanitizeTitle).filter(Boolean), (value) => value.toLowerCase());
+    }
+
+    function buildAcronymAlias(title) {
+      const words = sanitizeTitle(title)
+        .split(/\s+/)
+        .filter((word) => word && !ACRONYM_STOPWORDS.has(word.toLowerCase()));
+      if (words.length < 2 || words.length > 5) return '';
+      const acronym = words.map((word) => word[0]).join('').toUpperCase();
+      return acronym.length >= 2 ? acronym : '';
+    }
+
+    function buildDefiniteArticleAlias(title) {
+      const cleaned = sanitizeTitle(title);
+      if (!/^(The|An|A)\s+/.test(cleaned)) return '';
+      const alias = cleaned.replace(/^(The|An|A)\s+/, '').trim();
+      return alias && alias !== cleaned ? alias : '';
+    }
+
+    function buildHonorificStrippedAlias(title) {
+      const cleaned = sanitizeTitle(title);
+      const alias = cleaned.replace(/^(Lady|Lord|Sir|Dame|Captain|Commander|Prelate|Archmage|Master)\s+/i, '').trim();
+      return alias && alias !== cleaned ? alias : '';
+    }
+
+    function splitListLikeValue(value) {
+      if (Array.isArray(value)) return value.flatMap(splitListLikeValue);
+      return String(value || '')
+        .replace(/^\[|\]$/g, '')
+        .split(/[,;|]/g)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    function sanitizeTitle(value) {
+      return String(value || '')
+        .replace(/^["']|["']$/g, '')
+        .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
+        .replace(/\[\[([^\]]+)\]\]/g, '$1')
+        .replace(/(^|\s)#[A-Za-z][\w-]*/g, '$1')
+        .replace(/^[^A-Za-z0-9]+/, '')
+        .replace(/[\s,;:\/-]+$/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function normalizeHeading(line) {
+      return sanitizeTitle(line.replace(/^#{1,6}\s*/, '').replace(/\*+/g, ''));
+    }
+
+    function looksLikeHeading(line) {
+      return /^#{1,6}\s+/.test(line) ||
+        (/^[A-Z][A-Z0-9 '&/-]{3,60}$/.test(line) && !/:/.test(line)) ||
+        (/^\*\*[^*]{2,60}\*\*$/.test(line));
+    }
+
+    function looksLikeList(line) {
+      return /^([-*+]|\d+\.)\s+/.test(line);
+    }
+
+    function looksLikeBlockQuote(line) {
+      return /^>/.test(line);
+    }
+
+    function looksLikeTable(line) {
+      return /\|/.test(line) && /---/.test(line);
+    }
+
+    function looksLikeSeparator(line) {
+      return /^[-_=*]{3,}$/.test(line);
+    }
+
+    function isMetadataLine(line) {
+      return /^[A-Za-z][A-Za-z0-9 _-]{1,30}\s*:\s*.+$/.test(line) && Boolean(METADATA_KEYS[line.split(':')[0].trim().toLowerCase()]);
+    }
+
+    function looksLikeStatLine(line) {
+      const match = line.match(/^([A-Za-z][A-Za-z0-9 ()'\/+-]{1,40})\s*:\s*(.+)$/);
+      if (!match) return false;
+      return STATS_LABELS.has(match[1].trim().toLowerCase());
+    }
+
+    function looksLikeLabeledField(line) {
+      return /^[A-Za-z][A-Za-z0-9 ()'\/+-]{1,30}\s*:\s*.+$/.test(String(line || '').trim());
+    }
+
+    function slugify(value) {
+      return String(value || '')
+        .normalize('NFKD')
+        .replace(/[^\w\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .toLowerCase();
+    }
+
+    function makeUniqueFilename(title, index) {
+      const base = slugify(title) || `document-${index + 1}`;
+      return `${base}-${index + 1}.md`;
+    }
+
+    function normalizeEntityKey(value) {
+      return String(value || '')
+        .toLowerCase()
+        .replace(/\[\[|\]\]/g, '')
+        .replace(/\|/g, ' ')
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function formatFieldValue(value) {
+      return `[[${sanitizeTitle(value)}]]`;
+    }
+
+    function collectProperNouns(text) {
+      const hits = new Set();
+      const source = String(text || '').replace(/\[\[[^\]]+\]\]/g, ' ');
+      let match;
+      while ((match = PROPER_NOUN_PATTERN.exec(source)) !== null) {
+        const value = match[1].trim();
+        if (!shouldKeepReferenceCandidate(value)) continue;
+        hits.add(value);
+      }
+      PROPER_NOUN_PATTERN.lastIndex = 0;
+      return Array.from(hits);
+    }
+
+    function shouldKeepReferenceCandidate(candidate) {
+      const value = sanitizeTitle(candidate);
+      if (!value || value.length < 4 || STOPWORD_LINKS.has(value)) return false;
+
+      const key = normalizeEntityKey(value);
+      if (!key || COMMON_CAPITALIZED_WORDS.has(key) || GENERIC_SECTION_WORDS.has(key) || STATS_LABELS.has(key)) return false;
+
+      const wordCount = value.split(/\s+/).length;
+      if (wordCount >= 2) return true;
+
+      if (!/^[A-Z][a-z]{3,}$/.test(value)) return false;
+      if (GENERIC_SECTION_WORDS.has(value.toLowerCase())) return false;
+      if (value.length <= 5) return false;
+
+      return /[qxz]|ae|thr|eol|mor|vann|sol|uun|kesh|kael|vael|mael|seraph|eidolon|threx|immol/i.test(value);
+    }
+
+    function shouldLinkAsUnresolved(candidate) {
+      const value = sanitizeTitle(candidate);
+      const key = normalizeEntityKey(value);
+      if (!value || value.split(/\s+/).length < 2) return false;
+      if (GENERIC_SECTION_WORDS.has(key)) return false;
+      if (COMMON_CAPITALIZED_WORDS.has(value.split(/\s+/)[0].toLowerCase())) return false;
+      if (/^(lawful neutral|neutral good|neutral evil|chaotic neutral|chaotic good|chaotic evil|other powers|regional effects|campaign use|relationship map|the court|the citadel|the immolant)$/i.test(value)) return false;
+      if (/^(animate dead|arcane detonation|detect magic|dimension door|fire bolt|greater invisibility|hold person|legendary resistance|mage armor|mage hand|magic missile|melee spell attack|minor illusion|mirror image|misty step|natural armor|nonmagical attacks|paralyzing touch|passive perception|power word kill|power word stun|medium undead|ideologically extreme|opening line|deep speech)$/i.test(value)) return false;
+      if (/^(languages|saving throws|skills)\s+/i.test(value)) return false;
+      return true;
+    }
+
+    function isDocumentSelfReference(candidate, doc) {
+      const candidateKey = normalizeEntityKey(candidate).replace(/^the\s+/, '');
+      const titleKey = normalizeEntityKey(doc.title).replace(/^the\s+/, '');
+      if (!candidateKey || candidateKey === titleKey) return true;
+      return doc.aliases.some((alias) => normalizeEntityKey(alias).replace(/^the\s+/, '') === candidateKey);
+    }
+
+    function isNoisyHeading(value) {
+      const key = normalizeEntityKey(value);
+      if (!key) return true;
+      if (GENERIC_SECTION_WORDS.has(key) && ['tags', 'aliases', 'titles', 'factions'].includes(key)) return true;
+      return false;
+    }
+
+    function collapseBlanks(lines) {
+      const out = [];
+      let previousBlank = false;
+      lines.forEach((line) => {
+        const blank = !String(line).trim();
+        if (blank && previousBlank) return;
+        out.push(line);
+        previousBlank = blank;
+      });
+      return out;
+    }
+
+    function escapeRegExp(value) {
+      return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function yamlQuote(value) {
+      return `"${String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    }
+
+    function dedupeBy(items, keyFn) {
+      const seen = new Set();
+      const out = [];
+      items.forEach((item) => {
+        const key = keyFn(item);
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(item);
+      });
+      return out;
+    }
+
+    function protectExistingLinks(text) {
+      const links = [];
+      const protectedText = String(text || '').replace(/\[\[[^\]]+\]\]/g, (match) => {
+        const token = `@@LINKTOKEN${links.length}@@`;
+        links.push(match);
+        return token;
+      });
+      return { text: protectedText, links };
+    }
+
+    function restoreExistingLinks(text, links) {
+      return String(text || '').replace(/@@LINKTOKEN(\d+)@@/g, (match, index) => links[Number(index)] || '');
+    }
+
+    function resolveDocumentTitle(documentTitle, titleInfo, sourceTitle, index) {
+      const candidates = [
+        { value: sanitizeTitle(documentTitle), source: 'meta', raw: documentTitle || '' },
+        { value: sanitizeTitle(titleInfo.title), source: 'detected', raw: titleInfo.rawTitle || titleInfo.title || '' },
+        { value: sanitizeTitle(sourceTitle), source: 'filename', raw: sourceTitle || '' }
+      ].filter((candidate) => candidate.value);
+
+      const ranked = dedupeBy(candidates, (candidate) => `${candidate.source}::${normalizeEntityKey(candidate.value)}`)
+        .sort((a, b) => scoreTitleCandidate(b) - scoreTitleCandidate(a));
+
+      return ranked.length ? ranked[0].value : `Document ${index + 1}`;
+    }
+
+    function normalizeEntityType(sourceType, typeInfo, text) {
+      const raw = sanitizeTitle(sourceType);
+      if (!raw) return typeInfo.entityType;
+
+      const key = normalizeEntityKey(raw);
+      const lowerText = String(text || '').toLowerCase();
+      const directMap = {
+        npc: 'NPC',
+        character: 'NPC',
+        location: 'Location',
+        place: 'Location',
+        faction: 'Faction',
+        organization: 'Faction',
+        item: 'Item',
+        artifact: 'Item',
+        weapon: 'Item',
+        spell: 'Spell',
+        lore: 'Lore',
+        concept: 'Lore',
+        'dm prep': 'Session Note',
+        dm_prep: 'Session Note',
+        'session note': 'Session Note',
+        session: 'Session Note',
+        recap: 'Session Note',
+        creature: 'Creature',
+        monster: 'Creature'
+      };
+
+      if (directMap[key]) return directMap[key];
+      if (key.includes('undead')) {
+        return /(appearance|personality|voice|speaks|alignment|ideal|bond|flaw|relationship)/.test(lowerText) ? 'NPC' : 'Creature';
+      }
+      if (key.includes('prep') || key.includes('proceeding') || key.includes('scene')) return 'Session Note';
+      if (key.includes('location') || key.includes('jurisdiction') || key.includes('stronghold')) return 'Location';
+      return typeInfo.entityType;
+    }
+
+    function scoreTitleCandidate(candidate) {
+      const value = sanitizeTitle(candidate.value);
+      const key = normalizeEntityKey(value);
+      if (!value || isWeakTitleCandidate(value)) return -100;
+
+      let score = candidate.source === 'meta' ? 60 : candidate.source === 'filename' ? 45 : 35;
+      const words = value.split(/\s+/).length;
+
+      if (words >= 2) score += 18;
+      if (/^[A-Z][A-Za-z0-9'’-]+(?:\s+[A-Z][A-Za-z0-9'’-]+){1,5}$/.test(value)) score += 8;
+      if (looksDecorativeTitle(candidate.raw)) score -= 20;
+      if (/(overview|narrative understanding|world version|central question)/i.test(value)) score -= 15;
+      if (value.length > 72) score -= 12;
+      if (key.includes('faction') || key.includes('titles') || key.includes('aliases')) score -= 16;
+
+      return score;
+    }
+
+    function isWeakTitleCandidate(value) {
+      const key = normalizeEntityKey(value);
+      if (!key || key.length < 3) return true;
+      if (STOPWORD_LINKS.has(value)) return true;
+      if (GENERIC_SECTION_WORDS.has(key)) return true;
+      if (/^(faction|tags|titles|aliases|overview|content|synopsis)$/i.test(value)) return true;
+      return false;
+    }
+
+    function looksDecorativeTitle(value) {
+      return /(^|\s)#[A-Za-z][\w-]*/.test(String(value || ''));
+    }
+
+    function looksLikeTaxonomyHash(value) {
+      return /^#[A-Za-z][\w-]*$/i.test(String(value || '').trim());
+    }
+
+    function normalizeExistingWikilinks(text, registry) {
+      return String(text || '').replace(/\[\[([^\]]+)\]\]/g, (full, inner) => {
+        const parts = inner.split('|');
+        const targetPart = sanitizeTitle(parts[0]);
+        const labelPart = sanitizeTitle(parts[1] || targetPart);
+        const resolvedTarget = resolveRegistryTarget(targetPart, registry);
+        if (!resolvedTarget) return full;
+        return resolvedTarget === labelPart ? `[[${resolvedTarget}]]` : `[[${resolvedTarget}|${labelPart}]]`;
+      });
+    }
+
+    function resolveRegistryTarget(label, registry) {
+      const direct = registry.get(normalizeEntityKey(label));
+      if (direct) return direct.target;
+
+      const fragments = String(label || '')
+        .split(/\s*[,/]\s*/g)
+        .map((part) => sanitizeTitle(part))
+        .filter(Boolean);
+      for (const fragment of fragments) {
+        const entry = registry.get(normalizeEntityKey(fragment));
+        if (entry) return entry.target;
+      }
+      return '';
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapePipes(value) {
+      return String(value || '').replace(/\|/g, '\\|');
+    }
+
+    function extractRoleFromMarkdown(markdown) {
+      const match = String(markdown || '').match(/^- Role: (.+)$/m);
+      return match ? match[1].trim() : '';
+    }
+
+    function setStatus(message, isError) {
+      DOM.statusBox.className = `status${isError ? ' error' : ''}`;
+      DOM.statusBox.innerHTML = `<strong>Status:</strong> ${escapeHtml(message)}`;
+    }
+  </script>
+</body>
+</html>
