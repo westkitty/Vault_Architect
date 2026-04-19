@@ -1,0 +1,27 @@
+{
+  "name": "Vault Architect Offline",
+  "short_name": "Vault Architect",
+  "description": "D&D document formatter for Obsidian vault structure and NotebookLM semantic indexing. No server, no dependencies.",
+  "start_url": "./vault_architect_offline.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#09111b",
+  "theme_color": "#09111b",
+  "orientation": "any",
+  "lang": "en",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
